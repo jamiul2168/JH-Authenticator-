@@ -5,18 +5,7 @@ on:
     branches: [ main, master ]
     tags:
       - 'v*'
-  pull_request:
-    branches: [ main, master ]
   workflow_dispatch:
-    inputs:
-      build_type:
-        description: 'Build type (debug/release)'
-        required: true
-        default: 'release'
-        type: choice
-        options:
-          - debug
-          - release
 
 env:
   JAVA_VERSION: '17'
@@ -39,7 +28,7 @@ jobs:
           retention-days: 1
 
   build-release:
-    name: 🚀 Build Signed Release APK
+    name: 🚀 Build Release APK
     runs-on: ubuntu-latest
     needs: generate-icons
 
@@ -57,6 +46,20 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: 'temurin'
           cache: gradle
+
+      - name: Setup Gradle Wrapper
+        run: |
+          mkdir -p gradle/wrapper
+          curl -sL "https://github.com/gradle/gradle/raw/v8.4.0/gradle/wrapper/gradle-wrapper.jar" \
+            -o gradle/wrapper/gradle-wrapper.jar
+          cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
+          distributionBase=GRADLE_USER_HOME
+          distributionPath=wrapper/dists
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-bin.zip
+          networkTimeout=10000
+          zipStoreBase=GRADLE_USER_HOME
+          zipStorePath=wrapper/dists
+          EOF
 
       - name: Generate keystore if no secrets
         run: |
@@ -106,19 +109,3 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  summary:
-    name: 📊 Summary
-    runs-on: ubuntu-latest
-    needs: [build-release]
-    if: always()
-    steps:
-      - run: |
-          echo "## 📱 JH Tone APK Build" >> $GITHUB_STEP_SUMMARY
-          echo "| | |" >> $GITHUB_STEP_SUMMARY
-          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
-          echo "| 🌐 URL | https://jh.auth.jhtone.site/ |" >> $GITHUB_STEP_SUMMARY
-          echo "| 📅 Date | $(date '+%Y-%m-%d %H:%M UTC') |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🌿 Branch | ${{ github.ref_name }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Download APK from **Artifacts** section above." >> $GITHUB_STEP_SUMMARY
