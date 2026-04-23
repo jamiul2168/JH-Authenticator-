@@ -1,0 +1,4 @@
+-keep class com.webtoapp.** { *; }
+-keepattributes *Annotation*
+-keepattributes SourceFile,LineNumberTable
+-dontwarn okhttp3.**
